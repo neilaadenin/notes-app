@@ -1,4 +1,5 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '';
+//helper function untuk API
+export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
 
 export async function postJson(path: string, body: any) {
   const res = await fetch(`${API_BASE}${path}`, {

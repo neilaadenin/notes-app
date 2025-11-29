@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 type Note = {
   id: number;
@@ -12,38 +12,19 @@ type Note = {
 };
 
 export default function NotesPage(): React.JSX.Element {
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: 1,
-      title: "Midterm Examination",
-      body:
-        "A reminder to prepare for the upcoming midterm exam. Review all lecture materials and practice the sample questions provided by the instructor.",
-      color: "#FFF59D",
-      date: "2021-12-10",
-      time: "22:30",
-    },
-    {
-      id: 2,
-      title: "Project Deadline",
-      body:
-        "Final submission for the group project is due tomorrow. Make sure all documents, presentations, and reports are completed and uploaded on time.",
-      color: "#FFCDD2",
-      date: "2021-12-10",
-      time: "22:30",
-    },
-    {
-      id: 3,
-      title: "Jonas's notes",
-      body:
-        "Important notes from today’s meeting: follow up with the design team, revise the draft proposal, and prepare the updated version for the next review.",
-      color: "#90CAF9",
-      date: "2021-12-10",
-      time: "20:15",
-    },
-  ]);
-
+  const [notes, setNotes] = useState<Note[]>([]);
   const [editing, setEditing] = useState<Note | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    fetch("/api/notes", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then(setNotes);
+  }, []);
 
   function openNewNote() {
     setEditing({
@@ -63,7 +44,33 @@ export default function NotesPage(): React.JSX.Element {
     setIsModalOpen(true);
   }
 
+  const handleAdd = async () => {
+    if (!editing) return;
+    
+    const token = localStorage.getItem("token");
+
+    await fetch("/api/notes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ title: editing.title, content: editing.body }),
+    });
+
+    location.reload();
+  };
+
   function saveNote(note: Note) {
+    // Check if it's a new note (no existing id in database)
+    const isNewNote = !notes.find((n) => n.id === note.id);
+    
+    if (isNewNote) {
+      handleAdd();
+      return;
+    }
+
+    // For existing notes, update locally (or you can add update API call here)
     setNotes((prev) => {
       const exists = prev.find((n) => n.id === note.id);
       if (exists) return prev.map((n) => (n.id === note.id ? note : n));
@@ -81,6 +88,7 @@ export default function NotesPage(): React.JSX.Element {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
+        
         {/* HEADER */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-semibold text-black">My Notes</h1>
